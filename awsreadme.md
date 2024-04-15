@@ -102,3 +102,26 @@
 
 * **Amazon Personalize:** Your Recommendation Engine on AWS
 Amazon Personalize is a fully managed machine learning service for creating personalized recommendations for your users. It helps you recommend relevant products, content, or targeted marketing campaigns based on individual user preferences and behavior.
+
+
+
+
+
+Question #1
+A Solutions Architect is designing an application that will encrypt all data in an Amazon Redshift cluster. Which action will encrypt the data at rest?
+
+A. Place the Redshift cluster in a private subnet.
+B. Use the AWS KMS Default Customer master key.
+C. Encrypt the Amazon EBS volumes.
+D. Encrypt the data using SSL/TLS.
+Correct Answer: B
+Reference
+https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-db-encryption.html
+
+Explanation:  Amazon Redshift transparently encrypts data at rest using keys managed by AWS Key Management Service (AWS KMS). Employing the default customer master key (CMK) is the simplest way to achieve this encryption.
+
+Incorrect Choices:
+
+A. Placing the cluster in a private subnet does enhance security, but it doesn't directly encrypt data at rest.
+C. Encrypting EBS volumes protects data on the storage volumes attached to the Redshift instances but doesn't handle the database-level encryption within Redshift.
+D. SSL/TLS secures data in transit (while moving) but not data at rest (when stored).
