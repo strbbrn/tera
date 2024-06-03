@@ -21,46 +21,55 @@ jobs:
       run: npm install
 
     - name: Run Prettier
+      id: prettier
       run: npx prettier --check .
 
     - name: Run ESLint
+      id: eslint
       run: npx eslint .
 
-    - name: Comment on PR if linting or formatting fails
+    - name: Check for Prettier and ESLint errors
+      if: failure()
+      run: exit 1
+
+    - name: Annotate ESLint and Prettier errors
       if: failure()
       uses: actions/github-script@v6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const { context } = require('@actions/github');
-          const { owner, repo, number: issue_number } = context.issue;
-          const failures = context.payload.pull_request.title.includes('format') ? 'formatting' : 'linting';
-          const comment = `### :x: ${failures.charAt(0).toUpperCase() + failures.slice(1)} check failed
-Please fix the issues and update the pull request.`;
+          const { context, github } = require('@actions/github');
+          const { owner, repo, number: pull_number } = context.issue;
 
-          await github.issues.createComment({
+          const prettierOutput = await github.actions.listWorkflowRunArtifacts({
             owner,
             repo,
-            issue_number,
-            body: comment,
+            run_id: context.runId
+          });
+          const eslintOutput = await github.actions.listWorkflowRunArtifacts({
+            owner,
+            repo,
+            run_id: context.runId
           });
 
-    - name: Annotate the PR with errors
-      if: failure()
-      uses: dorny/paths-filter@v2
-      with:
-        filters: |
-          js:
-            - '**/*.js'
-      id: filter
+          let commentBody = '';
 
-    - name: Annotate changed JavaScript files
-      if: failure() && steps.filter.outputs.js_changed == 'true'
-      uses: docker://ghcr.io/github/super-linter/super-linter:latest
-      env:
-        DEFAULT_BRANCH: main
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        VALIDATE_JS: true
-        JS_LINTER_RULES_PATH: .eslintrc.json
-        LINTER_RULES_PATH: .prettierrc
-        
+          if (prettierOutput.artifacts.length > 0) {
+            commentBody += '### :x: Prettier check failed\n';
+            commentBody += 'Please fix the formatting issues and update the pull request.\n\n';
+          }
+
+          if (eslintOutput.artifacts.length > 0) {
+            commentBody += '### :x: ESLint check failed\n';
+            commentBody += 'Please fix the linting issues and update the pull request.\n\n';
+          }
+
+          if (commentBody !== '') {
+            await github.issues.createComment({
+              owner,
+              repo,
+              issue_number: pull_number,
+              body: commentBody
+            });
+          }
+          
