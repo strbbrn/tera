@@ -1,0 +1,32 @@
+name: Auto Merge PRs
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+
+    if: github.event.review.state == 'approved'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Merge pull request
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        PR_NUMBER=$(jq --raw-output .pull_request.number < $GITHUB_EVENT_PATH)
+        MAIN_BRANCH="main"
+        git fetch origin $MAIN_BRANCH
+        git checkout $MAIN_BRANCH
+        git pull origin $MAIN_BRANCH
+        git merge --no-ff "refs/pull/$PR_NUMBER/head"
+        git push origin $MAIN_BRANCH
